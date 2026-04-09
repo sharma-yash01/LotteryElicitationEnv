@@ -5,7 +5,7 @@ colorFrom: green
 colorTo: red
 sdk: docker
 pinned: false
-app_port: 8000
+app_port: 9000
 base_path: /web
 tags:
   - openenv
@@ -35,7 +35,7 @@ OpenEnv environment for **adaptive lottery preference elicitation**. A policy pr
 
 Base URL examples:
 
-- Local: `http://127.0.0.1:8000`
+- Local: `http://127.0.0.1:9000`
 - Hugging Face Space: `https://<owner>-<space-name>.hf.space` (no trailing slash)
 
 The Python client accepts `http://` or `https://`; OpenEnv converts it to the correct WebSocket URL.
@@ -73,7 +73,7 @@ import asyncio
 from client import LotteryElicitationEnvClient
 from env.models import Lottery, LotteryElicitationAction, LotteryOutcome
 
-BASE_URL = "https://your-username-your-space.hf.space"  # or http://127.0.0.1:8000
+BASE_URL = "https://your-username-your-space.hf.space"  # or http://127.0.0.1:9000
 
 
 def make_action(*, final: bool) -> LotteryElicitationAction:
@@ -124,7 +124,7 @@ from env.models import Lottery, LotteryElicitationAction, LotteryOutcome
 
 # ... same make_action ...
 
-with LotteryElicitationEnvClient(base_url="http://127.0.0.1:8000").sync() as env:
+with LotteryElicitationEnvClient(base_url="http://127.0.0.1:9000").sync() as env:
     r = env.reset(seed=42, curriculum_stage=1)
     r = env.step(make_action(final=False))
     r = env.step(make_action(final=True))
@@ -149,18 +149,20 @@ docker build -t lottery-elicitation-env:latest -f server/Dockerfile .
 ### Run
 
 ```bash
-docker run --rm -p 8000:8000 lottery-elicitation-env:latest
+docker run --rm -p 9000:9000 lottery-elicitation-env:latest
 ```
+
+Parallel containers on one host: use a different **host** port each time (container still listens on **9000** inside), e.g. `-p 9001:9000`, `-p 9002:9000`, and point each client at `http://127.0.0.1:<host_port>`.
 
 Check readiness:
 
 ```bash
-curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:9000/health
 ```
 
 ### Client: connect to the container
 
-Use **`base_url="http://127.0.0.1:8000"`** with the same sync or async examples as in §1.
+Use **`base_url="http://127.0.0.1:9000"`** with the same sync or async examples as in §1.
 
 ### Client: start container from Python (`from_docker_image`)
 
@@ -223,7 +225,7 @@ From this directory:
 
 ```bash
 # Installs: pip install -e ".[dev]" or uv sync
-uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 9000
 # or: python -m server.app
 ```
 

@@ -35,7 +35,7 @@ else:
     app.get("/health")(lambda: {"status": "ok"})
 
 
-def main(host: str = "0.0.0.0", port: int = 8000):
+def main(host: str = "0.0.0.0", port: int = 9000):
     """Entry point for local execution."""
     import uvicorn
 
