@@ -1,99 +1,84 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
+"""Typed OpenEnv client for LotteryElicitationEnv."""
 
-"""Lotteryelicitationenv Environment Client."""
-
-from typing import Dict
+from typing import Any, Dict
 
 from openenv.core.client_types import StepResult
-from openenv.core.env_server.types import State
-from openenv.core import EnvClient
+from openenv.core.env_client import EnvClient
 
-from .models import LotteryelicitationenvAction, LotteryelicitationenvObservation
+try:
+    from .env.models import (
+        LotteryElicitationAction,
+        LotteryElicitationObservation,
+        LotteryElicitationState,
+    )
+except ImportError:
+    from env.models import (
+        LotteryElicitationAction,
+        LotteryElicitationObservation,
+        LotteryElicitationState,
+    )
 
 
-class LotteryelicitationenvEnv(
-    EnvClient[LotteryelicitationenvAction, LotteryelicitationenvObservation]
+class LotteryElicitationEnvClient(
+    EnvClient[
+        LotteryElicitationAction,
+        LotteryElicitationObservation,
+        LotteryElicitationState,
+    ]
 ):
-    """
-    Client for the Lotteryelicitationenv Environment.
+    """WebSocket client for interacting with LotteryElicitationEnv."""
 
-    This client maintains a persistent WebSocket connection to the environment server,
-    enabling efficient multi-step interactions with lower latency.
-    Each client instance has its own dedicated environment session on the server.
-
-    Example:
-        >>> # Connect to a running server
-        >>> with LotteryelicitationenvEnv(base_url="http://localhost:8000") as client:
-        ...     result = client.reset()
-        ...     print(result.observation.echoed_message)
-        ...
-        ...     result = client.step(LotteryelicitationenvAction(message="Hello!"))
-        ...     print(result.observation.echoed_message)
-
-    Example with Docker:
-        >>> # Automatically start container and connect
-        >>> client = LotteryelicitationenvEnv.from_docker_image("LotteryElicitationEnv-env:latest")
-        >>> try:
-        ...     result = client.reset()
-        ...     result = client.step(LotteryelicitationenvAction(message="Test"))
-        ... finally:
-        ...     client.close()
-    """
-
-    def _step_payload(self, action: LotteryelicitationenvAction) -> Dict:
-        """
-        Convert LotteryelicitationenvAction to JSON payload for step message.
-
-        Args:
-            action: LotteryelicitationenvAction instance
-
-        Returns:
-            Dictionary representation suitable for JSON encoding
-        """
-        return {
-            "message": action.message,
+    def _step_payload(self, action: LotteryElicitationAction) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
+            "lottery_a": action.lottery_a.model_dump(),
+            "lottery_b": action.lottery_b.model_dump(),
         }
+        if action.theta_estimate is not None:
+            payload["theta_estimate"] = action.theta_estimate
+        return payload
 
-    def _parse_result(self, payload: Dict) -> StepResult[LotteryelicitationenvObservation]:
-        """
-        Parse server response into StepResult[LotteryelicitationenvObservation].
+    def _parse_result(self, payload: Dict[str, Any]):
+        obs_data = payload.get("observation")
+        if not isinstance(obs_data, dict):
+            obs_data = payload if isinstance(payload, dict) else {}
 
-        Args:
-            payload: JSON response data from server
+        done = payload.get("done", obs_data.get("done", False))
+        reward = payload.get("reward", obs_data.get("reward"))
 
-        Returns:
-            StepResult with LotteryelicitationenvObservation
-        """
-        obs_data = payload.get("observation", {})
-        observation = LotteryelicitationenvObservation(
-            echoed_message=obs_data.get("echoed_message", ""),
-            message_length=obs_data.get("message_length", 0),
-            done=payload.get("done", False),
-            reward=payload.get("reward"),
+        observation = LotteryElicitationObservation(
+            step_idx=obs_data.get("step_idx", 0),
+            steps_remaining=obs_data.get("steps_remaining", 0),
+            max_steps=obs_data.get("max_steps", 1),
+            history=obs_data.get("history", []),
+            last_choice=obs_data.get("last_choice"),
+            gamma_range=tuple(obs_data.get("gamma_range", (0.2, 1.5))),
+            lambda_range=tuple(obs_data.get("lambda_range", (1.0, 4.5))),
+            min_outcome_value=float(obs_data.get("min_outcome_value", -50.0)),
+            max_outcome_value=float(obs_data.get("max_outcome_value", 100.0)),
+            done=done,
+            reward=reward,
             metadata=obs_data.get("metadata", {}),
         )
+        return StepResult(observation=observation, reward=reward, done=done)
 
-        return StepResult(
-            observation=observation,
-            reward=payload.get("reward"),
-            done=payload.get("done", False),
+    def _parse_state(self, payload: Dict[str, Any]):
+        state_data = payload.get("state")
+        if not isinstance(state_data, dict):
+            state_data = payload if isinstance(payload, dict) else {}
+
+        return LotteryElicitationState(
+            episode_id=state_data.get("episode_id"),
+            step_count=state_data.get("step_count", 0),
+            true_gamma=state_data.get("true_gamma", 0.0),
+            true_lambda=state_data.get("true_lambda", 0.0),
+            estimated_gamma=state_data.get("estimated_gamma"),
+            estimated_lambda=state_data.get("estimated_lambda"),
+            gamma_mse=state_data.get("gamma_mse"),
+            lambda_mse=state_data.get("lambda_mse"),
+            holt_laury_prediction_accuracy=state_data.get("holt_laury_prediction_accuracy"),
+            total_reward=state_data.get("total_reward", 0.0),
         )
 
-    def _parse_state(self, payload: Dict) -> State:
-        """
-        Parse server response into State object.
 
-        Args:
-            payload: JSON response from state request
-
-        Returns:
-            State object with episode_id and step_count
-        """
-        return State(
-            episode_id=payload.get("episode_id"),
-            step_count=payload.get("step_count", 0),
-        )
+# Backward-compatible alias from scaffold naming.
+LotteryelicitationenvEnv = LotteryElicitationEnvClient

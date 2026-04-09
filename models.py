@@ -1,28 +1,20 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
+"""OpenEnv models at package root for openenv CLI validation."""
 
-"""
-Data models for the Lotteryelicitationenv Environment.
+try:
+    from .env.models import (
+        LotteryElicitationAction,
+        LotteryElicitationObservation,
+        LotteryElicitationState,
+    )
+except ImportError:
+    from env.models import (
+        LotteryElicitationAction,
+        LotteryElicitationObservation,
+        LotteryElicitationState,
+    )
 
-The LotteryElicitationEnv environment is a simple test environment that echoes back messages.
-"""
-
-from pydantic import Field
-
-from openenv.core.env_server.types import Action, Observation
-
-
-class LotteryelicitationenvAction(Action):
-    """Action for the Lotteryelicitationenv environment - just a message to echo."""
-
-    message: str = Field(..., description="Message to echo back")
-
-
-class LotteryelicitationenvObservation(Observation):
-    """Observation from the Lotteryelicitationenv environment - the echoed message."""
-
-    echoed_message: str = Field(default="", description="The echoed message")
-    message_length: int = Field(default=0, description="Length of the echoed message")
+__all__ = [
+    "LotteryElicitationAction",
+    "LotteryElicitationObservation",
+    "LotteryElicitationState",
+]

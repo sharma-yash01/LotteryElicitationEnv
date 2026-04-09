@@ -1,11 +1,8 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
+"""LotteryElicitationEnv server components."""
 
-"""Lotteryelicitationenv environment server components."""
+try:
+    from env.lottery_env import LotteryElicitationEnvironment
+except ImportError:
+    from ..env.lottery_env import LotteryElicitationEnvironment
 
-from .LotteryElicitationEnv_environment import LotteryelicitationenvEnvironment
-
-__all__ = ["LotteryelicitationenvEnvironment"]
+__all__ = ["LotteryElicitationEnvironment"]
